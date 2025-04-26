@@ -1,1 +1,81 @@
-{"nbformat":4,"nbformat_minor":0,"metadata":{"colab":{"provenance":[],"authorship_tag":"ABX9TyMZ5AyeKCazIBVBHf1SDFUK"},"kernelspec":{"name":"python3","display_name":"Python 3"},"language_info":{"name":"python"}},"cells":[{"cell_type":"code","execution_count":1,"metadata":{"id":"zAHqBjSwAE-D","executionInfo":{"status":"ok","timestamp":1745669380059,"user_tz":-330,"elapsed":10,"user":{"displayName":"chaitrali patil","userId":"00748785220567671668"}}},"outputs":[],"source":["code = '''\n","import streamlit as st\n","import pickle\n","import pandas as pd\n","\n","teams = ['Sunrisers Hyderabad',\n"," 'Mumbai Indians',\n"," 'Royal Challengers Bangalore',\n"," 'Kolkata Knight Riders',\n"," 'Kings XI Punjab',\n"," 'Chennai Super Kings',\n"," 'Rajasthan Royals',\n"," 'Delhi Capitals']\n","\n","cities = ['Hyderabad', 'Bangalore', 'Mumbai', 'Indore', 'Kolkata', 'Delhi',\n","       'Chandigarh', 'Jaipur', 'Chennai', 'Cape Town', 'Port Elizabeth',\n","       'Durban', 'Centurion', 'East London', 'Johannesburg', 'Kimberley',\n","       'Bloemfontein', 'Ahmedabad', 'Cuttack', 'Nagpur', 'Dharamsala',\n","       'Visakhapatnam', 'Pune', 'Raipur', 'Ranchi', 'Abu Dhabi',\n","       'Sharjah', 'Mohali', 'Bengaluru']\n","\n","pipe = pickle.load(open('pipe.pkl','rb'))\n","st.title('IPL Win Predictor')\n","\n","col1, col2 = st.columns(2)\n","\n","with col1:\n","    batting_team = st.selectbox('Select the batting team',sorted(teams))\n","with col2:\n","    bowling_team = st.selectbox('Select the bowling team',sorted(teams))\n","\n","selected_city = st.selectbox('Select host city',sorted(cities))\n","\n","target = st.number_input('Target')\n","\n","col3,col4,col5 = st.columns(3)\n","\n","with col3:\n","    score = st.number_input('Score')\n","with col4:\n","    overs = st.number_input('Overs completed')\n","with col5:\n","    wickets = st.number_input('Wickets out')\n","\n","if st.button('Predict Probability'):\n","    runs_left = target - score\n","    balls_left = 120 - (overs*6)\n","    wickets = 10 - wickets\n","    crr = score/overs\n","    rrr = (runs_left*6)/balls_left\n","\n","    input_df = pd.DataFrame({'batting_team':[batting_team],'bowling_team':[bowling_team],'city':[selected_city],'runs_left':[runs_left],'balls_left':[balls_left],'wickets':[wickets],'total_runs_x':[target],'crr':[crr],'rrr':[rrr]})\n","\n","    result = pipe.predict_proba(input_df)\n","    loss = result[0][0]\n","    win = result[0][1]\n","    st.header(batting_team + \"- \" + str(round(win*100)) + \"%\")\n","    st.header(bowling_team + \"- \" + str(round(loss*100)) + \"%\")\n","'''\n","with open('app.py', 'w') as f:\n","    f.write(code)\n"]}]}
+import streamlit as st
+import pickle
+import pandas as pd
+
+# List of teams and cities for the drop-down options
+teams = ['Sunrisers Hyderabad',
+ 'Mumbai Indians',
+ 'Royal Challengers Bangalore',
+ 'Kolkata Knight Riders',
+ 'Kings XI Punjab',
+ 'Chennai Super Kings',
+ 'Rajasthan Royals',
+ 'Delhi Capitals']
+
+cities = ['Hyderabad', 'Bangalore', 'Mumbai', 'Indore', 'Kolkata', 'Delhi',
+       'Chandigarh', 'Jaipur', 'Chennai', 'Cape Town', 'Port Elizabeth',
+       'Durban', 'Centurion', 'East London', 'Johannesburg', 'Kimberley',
+       'Bloemfontein', 'Ahmedabad', 'Cuttack', 'Nagpur', 'Dharamsala',
+       'Visakhapatnam', 'Pune', 'Raipur', 'Ranchi', 'Abu Dhabi',
+       'Sharjah', 'Mohali', 'Bengaluru']
+
+# Load the trained model
+pipe = pickle.load(open('pipe.pkl', 'rb'))
+
+# Title of the Streamlit app
+st.title('IPL Win Predictor')
+
+# Creating two columns for batting and bowling team selection
+col1, col2 = st.columns(2)
+
+with col1:
+    batting_team = st.selectbox('Select the batting team', sorted(teams))
+with col2:
+    bowling_team = st.selectbox('Select the bowling team', sorted(teams))
+
+# Select the city for the match
+selected_city = st.selectbox('Select host city', sorted(cities))
+
+# Input field for target score
+target = st.number_input('Target', min_value=0)
+
+# Creating three columns for score, overs, and wickets input
+col3, col4, col5 = st.columns(3)
+
+with col3:
+    score = st.number_input('Score', min_value=0)
+with col4:
+    overs = st.number_input('Overs completed', min_value=0.0, step=0.1)
+with col5:
+    wickets = st.number_input('Wickets out', min_value=0, max_value=10)
+
+# Predict button to calculate win probabilities
+if st.button('Predict Probability'):
+    # Calculate remaining runs, balls, and other necessary parameters
+    runs_left = target - score
+    balls_left = 120 - (overs * 6)  # 120 balls in total for a T20 match
+    wickets_left = 10 - wickets
+    crr = score / overs  # Current run rate
+    rrr = (runs_left * 6) / balls_left  # Required run rate
+
+    # Create the input data frame for prediction
+    input_df = pd.DataFrame({
+        'batting_team': [batting_team],
+        'bowling_team': [bowling_team],
+        'city': [selected_city],
+        'runs_left': [runs_left],
+        'balls_left': [balls_left],
+        'wickets': [wickets_left],
+        'total_runs_x': [target],
+        'crr': [crr],
+        'rrr': [rrr]
+    })
+
+    # Predict the probabilities
+    result = pipe.predict_proba(input_df)
+    loss = result[0][0]
+    win = result[0][1]
+
+    # Display the predictions
+    st.header(f"{batting_team} - {round(win * 100)}%")
+    st.header(f"{bowling_team} - {round(loss * 100)}%")

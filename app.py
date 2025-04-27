@@ -38,20 +38,36 @@ with col5:
     wickets = st.number_input('Wickets out')
 
 if st.button('Predict Probability'):
+    # Convert the teams and city to their respective indices
+    batting_team_code = teams.index(batting_team)  # Get the index of the batting team
+    bowling_team_code = teams.index(bowling_team)  # Get the index of the bowling team
+    city_code = cities.index(selected_city)  # Get the index of the selected city
+
+    # Calculate the remaining data
     runs_left = target - score
     balls_left = 120 - (overs * 6)
     wickets = 10 - wickets
     crr = score / overs
     rrr = (runs_left * 6) / balls_left
 
-    input_df = pd.DataFrame({'batting_team': [batting_team], 'bowling_team': [bowling_team],
-                             'city': [selected_city], 'runs_left': [runs_left],
-                             'balls_left': [balls_left], 'wickets': [wickets],
-                             'total_runs_x': [target], 'crr': [crr], 'rrr': [rrr]})
+    # Prepare the input dataframe with indices instead of names
+    input_df = pd.DataFrame({
+        'batting_team': [batting_team_code],  # Use the index of the team
+        'bowling_team': [bowling_team_code],  # Use the index of the team
+        'city': [city_code],  # Use the index of the city
+        'runs_left': [runs_left],
+        'balls_left': [balls_left],
+        'wickets': [wickets],
+        'total_runs_x': [target],
+        'crr': [crr],
+        'rrr': [rrr]
+    })
 
+    # Predict the result
     result = pipe.predict_proba(input_df)
     loss = result[0][0]
     win = result[0][1]
 
+    # Display the results
     st.header(f'{batting_team} - {round(win * 100)}%')
     st.header(f'{bowling_team} - {round(loss * 100)}%')
